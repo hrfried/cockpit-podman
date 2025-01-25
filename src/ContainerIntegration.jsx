@@ -90,8 +90,8 @@ export const renderContainerVolumes = (volumes) => {
 };
 
 const ContainerEnv = ({ containerEnv, imageEnv }) => {
-    // filter out some Environment variables set by podman or by image
-    const toRemoveEnv = [...imageEnv, 'container=podman'];
+    // filter out some Environment variables set by docker or by image
+    const toRemoveEnv = [...imageEnv, 'container=docker'];
     let toShow = containerEnv.filter(variable => {
         if (toRemoveEnv.includes(variable)) {
             return false;

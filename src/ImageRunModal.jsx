@@ -209,9 +209,9 @@ export class ImageRunModal extends React.Component {
             if (this.state.restartPolicy === "on-failure" && this.state.restartTries !== null) {
                 createConfig.restart_tries = this.state.restartTries;
             }
-            // Enable podman-restart.service for system containers, for user
+            // Enable docker-restart.service for system containers, for user
             // sessions enable-linger needs to be enabled for containers to start on boot.
-            if (this.state.restartPolicy === "always" && (this.props.podmanInfo.userLingeringEnabled || this.props.systemServiceAvailable)) {
+            if (this.state.restartPolicy === "always" && (this.props.dockerInfo.userLingeringEnabled || this.props.systemServiceAvailable)) {
                 this.enablePodmanRestartService();
             }
         }
@@ -376,7 +376,7 @@ export class ImageRunModal extends React.Component {
             // Only report first encountered error
             if (dialogError === "" && dialogErrorDetail === "") {
                 dialogError = _("Failed to search for new images");
-                // TODO: add registry context, podman does not include it in the reply.
+                // TODO: add registry context, docker does not include it in the reply.
                 dialogErrorDetail = reason ? cockpit.format(_("Failed to search for images: $0"), reason.message) : _("Failed to search for images.");
             }
         };
@@ -420,8 +420,8 @@ export class ImageRunModal extends React.Component {
         // instead only rely on manifests query (requires image:tag name)
         if (!RE_CONTAINER_TAG.test(value)) {
             // If there are registries configured search in them, or if a user searches for `docker.io/cockpit` let
-            // podman search in the user specified registry.
-            if (Object.keys(this.props.podmanInfo.registries).length !== 0 || value.includes('/')) {
+            // docker search in the user specified registry.
+            if (Object.keys(this.props.dockerInfo.registries).length !== 0 || value.includes('/')) {
                 searches.push(this.activeConnection.call({
                     method: "GET",
                     path: client.VERSION + "libpod/images/search",
@@ -616,7 +616,7 @@ export class ImageRunModal extends React.Component {
         return results;
     };
 
-    // Similar to the output of podman search and podman's /libpod/images/search endpoint only show the root domain.
+    // Similar to the output of docker search and docker's /libpod/images/search endpoint only show the root domain.
     truncateRegistryDomain = (domain) => {
         const parts = domain.split('.');
         if (parts.length > 2) {
@@ -626,14 +626,14 @@ export class ImageRunModal extends React.Component {
     };
 
     enablePodmanRestartService = () => {
-        const argv = ["systemctl", "enable", "podman-restart.service"];
+        const argv = ["systemctl", "enable", "docker-restart.service"];
         if (!this.isSystem()) {
             argv.splice(1, 0, "--user");
         }
 
         cockpit.spawn(argv, { superuser: this.isSystem() ? "require" : "", err: "message" })
                 .catch(err => {
-                    console.warn("Failed to start podman-restart.service:", JSON.stringify(err));
+                    console.warn("Failed to start docker-restart.service:", JSON.stringify(err));
                 });
     };
 
@@ -745,7 +745,7 @@ export class ImageRunModal extends React.Component {
 
     render() {
         const Dialogs = this.props.dialogs;
-        const { registries, podmanRestartAvailable, userLingeringEnabled, userPodmanRestartAvailable, selinuxAvailable, version } = this.props.podmanInfo;
+        const { registries, dockerRestartAvailable, userLingeringEnabled, userPodmanRestartAvailable, selinuxAvailable, version } = this.props.dockerInfo;
         const { image } = this.props;
         const dialogValues = this.state;
         const { activeTabKey, owner, selectedImage } = this.state;
@@ -756,7 +756,7 @@ export class ImageRunModal extends React.Component {
         }
 
         const localImage = this.state.image || (selectedImage && this.props.localImages.some(img => img.Id === selectedImage.Id));
-        const podmanRegistries = registries && registries.search ? registries.search : utils.fallbackRegistries;
+        const dockerRegistries = registries && registries.search ? registries.search : utils.fallbackRegistries;
 
         // Add the search component
         const footer = (
@@ -778,7 +778,7 @@ export class ImageRunModal extends React.Component {
                     ev.stopPropagation();
                 }}
                 />
-                {podmanRegistries.map(registry => {
+                {dockerRegistries.map(registry => {
                     const index = this.truncateRegistryDomain(registry);
                     return (
                         <ToggleGroupItem
@@ -1004,7 +1004,7 @@ export class ImageRunModal extends React.Component {
                                 </Flex>
                             </FormGroup>
                         }
-                        {((userLingeringEnabled && userPodmanRestartAvailable) || (this.isSystem() && podmanRestartAvailable)) &&
+                        {((userLingeringEnabled && userPodmanRestartAvailable) || (this.isSystem() && dockerRestartAvailable)) &&
                         <Grid hasGutter md={6} sm={3}>
                             <GridItem>
                                 <FormGroup fieldId='run-image-dialog-restart-policy' label={_("Restart policy")}

@@ -12,7 +12,7 @@ manually:
 
 ```
 mkdir -p ~/.local/share/cockpit
-ln -s `pwd`/dist ~/.local/share/cockpit/podman
+ln -s `pwd`/dist ~/.local/share/cockpit/docker
 ```
 
 After changing the code and running `make` again, reload the Cockpit page in

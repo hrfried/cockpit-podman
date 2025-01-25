@@ -381,7 +381,7 @@ const ImageActions = ({ image, onAddNotification, user, systemServiceAvailable, 
     const runImage = () => {
         Dialogs.show(
             <utils.PodmanInfoContext.Consumer>
-                {(podmanInfo) => (
+                {(dockerInfo) => (
                     <DialogsContext.Consumer>
                         {(Dialogs) => (
                             <ImageRunModal
@@ -390,7 +390,7 @@ const ImageActions = ({ image, onAddNotification, user, systemServiceAvailable, 
                               user={user}
                               image={image}
                               onAddNotification={onAddNotification}
-                              podmanInfo={podmanInfo}
+                              dockerInfo={dockerInfo}
                               dialogs={Dialogs}
                             />
                         )}

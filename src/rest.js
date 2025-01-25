@@ -87,7 +87,7 @@ function connect(address, system) {
 }
 
 /*
- * Connects to the podman service, performs a single call, and closes the
+ * Connects to the docker service, performs a single call, and closes the
  * connection.
  */
 async function call (address, system, parameters) {

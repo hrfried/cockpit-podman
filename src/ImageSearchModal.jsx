@@ -65,7 +65,7 @@ export const ImageSearchModal = ({ downloadImage, user, userServiceAvailable, sy
         if (searchRegistry !== "") {
             queryRegistries = [searchRegistry];
         }
-        // if a user searches for `docker.io/cockpit` let podman search in the user specified registry.
+        // if a user searches for `docker.io/cockpit` let docker search in the user specified registry.
         if (imageIdentifier.includes('/')) {
             queryRegistries = [""];
         }
@@ -132,7 +132,7 @@ export const ImageSearchModal = ({ downloadImage, user, userServiceAvailable, sy
     };
 
     return (
-        <Modal isOpen className="podman-search"
+        <Modal isOpen className="docker-search"
                position="top" variant="large"
                onClose={handleClose}
                title={_("Search for an image")}

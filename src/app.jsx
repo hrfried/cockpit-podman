@@ -64,7 +64,7 @@ class Application extends React.Component {
             showStartService: true,
             version: '1.3.0',
             selinuxAvailable: false,
-            podmanRestartAvailable: false,
+            dockerRestartAvailable: false,
             userPodmanRestartAvailable: false,
             currentUser: _("User"),
             userLingeringEnabled: null,
@@ -258,7 +258,7 @@ class Application extends React.Component {
     }
 
     updateContainer(id, system, event) {
-        /* when firing off multiple calls in parallel, podman can return them in a random order.
+        /* when firing off multiple calls in parallel, docker can return them in a random order.
          * This messes up the state. So we need to serialize them for a particular container. */
         const idx = id + system.toString();
         const wait = this.pendingUpdateContainer[idx] ?? Promise.resolve();
@@ -306,7 +306,7 @@ class Application extends React.Component {
                 });
     }
 
-    // see https://docs.podman.io/en/latest/markdown/podman-events.1.html
+    // see https://docs.docker.io/en/latest/markdown/docker-events.1.html
 
     handleImageEvent(event, system) {
         switch (event.Action) {
@@ -351,7 +351,7 @@ class Application extends React.Component {
          */
         case 'start':
             // HACK: We don't get 'started' event for pods got started by the first container which was added to them
-            // https://github.com/containers/podman/issues/7213
+            // https://github.com/containers/docker/issues/7213
             (event.Actor.Attributes.podId
                 ? this.updatePod(event.Actor.Attributes.podId, system)
                 : this.updatePods(system)
@@ -361,13 +361,13 @@ class Application extends React.Component {
         case 'cleanup':
         case 'create':
         case 'died':
-        case 'exec_died': // HACK: pick up health check runs with older podman versions, see https://github.com/containers/podman/issues/19237
+        case 'exec_died': // HACK: pick up health check runs with older docker versions, see https://github.com/containers/docker/issues/19237
         case 'health_status':
         case 'pause':
         case 'restore':
         case 'stop':
         case 'unpause':
-        case 'rename': // rename event is available starting podman v4.1; until then the container does not get refreshed after renaming
+        case 'rename': // rename event is available starting docker v4.1; until then the container does not get refreshed after renaming
             this.updateContainer(id, system, event);
             break;
 
@@ -383,8 +383,8 @@ class Application extends React.Component {
                     newPod.Containers = newPod.Containers.filter(container => container.Id !== id);
                     pods = { ...prevState.pods, [podIdx]: newPod };
                 } else {
-                    // HACK: with podman < 4.3.0 we don't get a pod event when a container in a pod is removed
-                    // https://github.com/containers/podman/issues/15408
+                    // HACK: with docker < 4.3.0 we don't get a pod event when a container in a pod is removed
+                    // https://github.com/containers/docker/issues/15408
                     pods = prevState.pods;
                     this.updatePods(system);
                 }
@@ -478,7 +478,7 @@ class Application extends React.Component {
                                 this.cleanupAfterService(system);
                             });
 
-                    // Listen if podman is still running
+                    // Listen if docker is still running
                     const ch = cockpit.channel({ superuser: system ? "require" : null, payload: "stream", unix: client.getAddress(system) });
                     ch.addEventListener("close", () => {
                         this.setState({ [system ? "systemServiceAvailable" : "userServiceAvailable"]: false });
@@ -520,8 +520,8 @@ class Application extends React.Component {
                 .then(() => this.setState({ selinuxAvailable: true }))
                 .catch(() => this.setState({ selinuxAvailable: false }));
 
-        cockpit.spawn(["systemctl", "show", "--value", "-p", "LoadState", "podman-restart"], { environ: ["LC_ALL=C"], error: "ignore" })
-                .then(out => this.setState({ podmanRestartAvailable: out.trim() === "loaded" }));
+        cockpit.spawn(["systemctl", "show", "--value", "-p", "LoadState", "docker-restart"], { environ: ["LC_ALL=C"], error: "ignore" })
+                .then(out => this.setState({ dockerRestartAvailable: out.trim() === "loaded" }));
 
         superuser.addEventListener("changed", () => this.setState({ privileged: !!superuser.allowed }));
         this.setState({ privileged: superuser.allowed });
@@ -567,9 +567,9 @@ class Application extends React.Component {
     }
 
     checkUserService() {
-        const argv = ["systemctl", "--user", "is-enabled", "podman.socket"];
+        const argv = ["systemctl", "--user", "is-enabled", "docker.socket"];
 
-        cockpit.spawn(["systemctl", "--user", "show", "--value", "-p", "LoadState", "podman-restart"], { environ: ["LC_ALL=C"], error: "ignore" })
+        cockpit.spawn(["systemctl", "--user", "show", "--value", "-p", "LoadState", "docker-restart"], { environ: ["LC_ALL=C"], error: "ignore" })
                 .then(out => this.setState({ userPodmanRestartAvailable: out.trim() === "loaded" }));
 
         cockpit.spawn(argv, { environ: ["LC_ALL=C"], err: "out" })
@@ -588,9 +588,9 @@ class Application extends React.Component {
 
         let argv;
         if (this.state.enableService)
-            argv = ["systemctl", "enable", "--now", "podman.socket"];
+            argv = ["systemctl", "enable", "--now", "docker.socket"];
         else
-            argv = ["systemctl", "start", "podman.socket"];
+            argv = ["systemctl", "start", "docker.socket"];
 
         cockpit.spawn(argv, { superuser: "require", err: "message" })
                 .then(() => this.init(true))
@@ -600,13 +600,13 @@ class Application extends React.Component {
                         systemContainersLoaded: true,
                         systemImagesLoaded: true
                     });
-                    console.warn("Failed to start system podman.socket:", JSON.stringify(err));
+                    console.warn("Failed to start system docker.socket:", JSON.stringify(err));
                 });
 
         if (this.state.enableService)
-            argv = ["systemctl", "--user", "enable", "--now", "podman.socket"];
+            argv = ["systemctl", "--user", "enable", "--now", "docker.socket"];
         else
-            argv = ["systemctl", "--user", "start", "podman.socket"];
+            argv = ["systemctl", "--user", "start", "docker.socket"];
 
         cockpit.spawn(argv, { err: "message" })
                 .then(() => this.init(false))
@@ -617,14 +617,14 @@ class Application extends React.Component {
                         userPodsLoaded: true,
                         userImagesLoaded: true
                     });
-                    console.warn("Failed to start user podman.socket:", JSON.stringify(err));
+                    console.warn("Failed to start user docker.socket:", JSON.stringify(err));
                 });
     }
 
     goToServicePage(e) {
         if (!e || e.button !== 0)
             return;
-        cockpit.jump("/system/services#/podman.socket");
+        cockpit.jump("/system/services#/docker.socket");
     }
 
     render() {
@@ -640,10 +640,10 @@ class Application extends React.Component {
                             <EmptyStateFooter>
                                 <Checkbox isChecked={this.state.enableService}
                                       id="enable"
-                                      label={_("Automatically start podman on boot")}
+                                      label={_("Automatically start docker on boot")}
                                       onChange={ (_event, checked) => this.setState({ enableService: checked }) } />
                                 <Button onClick={this.startService}>
-                                    {_("Start podman")}
+                                    {_("Start docker")}
                                 </Button>
                                 { cockpit.manifests.system &&
                                 <EmptyStateActions>
@@ -754,7 +754,7 @@ class Application extends React.Component {
             cgroupVersion: this.state.cgroupVersion,
             registries: this.state.registries,
             selinuxAvailable: this.state.selinuxAvailable,
-            podmanRestartAvailable: this.state.podmanRestartAvailable,
+            dockerRestartAvailable: this.state.dockerRestartAvailable,
             userPodmanRestartAvailable: this.state.userPodmanRestartAvailable,
             userLingeringEnabled: this.state.userLingeringEnabled,
             version: this.state.version,

@@ -19,18 +19,18 @@ export const WithPodmanInfo = ({ value, children }) => {
     );
 };
 
-// https://github.com/containers/podman/blob/main/libpod/define/containerstate.go
+// https://github.com/containers/docker/blob/main/libpod/define/containerstate.go
 // "Restarting" comes from special handling of restart case in Application.updateContainer()
 export const states = [_("Exited"), _("Paused"), _("Stopped"), _("Removing"), _("Configured"), _("Created"), _("Restart"), _("Running")];
 
-// https://github.com/containers/podman/blob/main/libpod/define/podstate.go
+// https://github.com/containers/docker/blob/main/libpod/define/podstate.go
 export const podStates = [_("Created"), _("Running"), _("Stopped"), _("Paused"), _("Exited"), _("Error")];
 
 export const fallbackRegistries = ["docker.io", "quay.io"];
 
 export function debug(system, ...args) {
-    if (window.debugging === "all" || window.debugging?.includes("podman"))
-        console.debug("podman", system ? "system" : "user", ...args);
+    if (window.debugging === "all" || window.debugging?.includes("docker"))
+        console.debug("docker", system ? "system" : "user", ...args);
 }
 
 export function truncate_id(id) {
